@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Album Souvenir</title>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;700&family=Cinzel:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --rose: #e8a0b4;
+    --rose-light: #f9e4ec;
+    --rose-dark: #c2607a;
+    --cream: #fdf8f4;
+    --brown: #6b4c3b;
+    --brown-light: #c9a98a;
+    --text: #2d1f1a;
+    --muted: #8a7068;
+    --border: #e8ddd8;
+    --white: #ffffff;
+    --sidebar-w: 200px;
+    --tools-w: 220px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* TOP BAR */
+  #topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    height: 52px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  #topbar .logo {
+    font-family: 'Dancing Script', cursive;
+    font-size: 22px;
+    color: var(--rose-dark);
+    margin-right: 8px;
+  }
+
+  #topbar select, #topbar button {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--white);
+    cursor: pointer;
+    color: var(--text);
+  }
+
+  #topbar button {
+    background: var(--rose-dark);
+    color: white;
+    border-color: var(--rose-dark);
+    font-weight: 500;
+  }
+
+  #topbar button.secondary {
+    background: var(--white);
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  #topbar button:hover { opacity: 0.85; }
+
+  #topbar .spacer { flex: 1; }
+
+  /* MAIN LAYOUT */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* GALERIE */
+  #gallery-panel {
+    width: var(--sidebar-w);
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  #gallery-header {
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  #import-btn {
+    background: var(--rose-light);
+    border: 1px dashed var(--rose);
+    color: var(--rose-dark);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #import-btn:hover { background: #f2ccd8; }
+
+  #gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .thumb {
+    aspect-ratio: 1;
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: grab;
+    position: relative;
+    border: 2px solid transparent;
+    transition: border-color 0.15s;
+  }
+
+  .thumb:hover { border-color: var(--rose); }
+  .thumb.selected { border-color: var(--rose-dark); }
+
+  .thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  .thumb .del-thumb {
+    position: absolute;
+    top: 2px; right: 2px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 18px; height: 18px;
+    font-size: 10px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .thumb:hover .del-thumb { display: flex; }
+
+  #gallery-drop {
+    margin: 0 10px 10px;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  #gallery-drop:hover { border-color: var(--rose); color: var(--rose-dark); }
+
+  /* CANVAS ZONE */
+  #canvas-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 20px;
+    background: #f0ebe6;
+  }
+
+  #page-canvas {
+    background: white;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* Cadres */
+  .frame {
+    position: absolute;
+    overflow: hidden;
+    border: 2px solid #ecddd6;
+    background: #f8f0ec;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .frame:hover { border-color: var(--rose); }
+  .frame.has-photo { border-color: transparent; }
+  .frame.drag-over { border-color: var(--rose-dark) !important; background: var(--rose-light) !important; }
+
+  .frame img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  .frame-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--brown-light);
+    font-size: 11px;
+    text-align: center;
+    padding: 8px;
+    pointer-events: none;
+  }
+
+  .frame-placeholder svg {
+    width: 28px; height: 28px;
+    opacity: 0.5;
+  }
+
+  .frame .caption-el {
+    position: absolute;
+    bottom: 4px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    padding: 2px 6px;
+    pointer-events: none;
+  }
+
+  /* Page title overlay */
+  #page-title-el {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Stickers */
+  .sticker-el {
+    position: absolute;
+    font-size: 28px;
+    cursor: move;
+    user-select: none;
+    z-index: 10;
+    line-height: 1;
+  }
+
+  /* TOOLS PANEL */
+  #tools-panel {
+    width: var(--tools-w);
+    background: var(--white);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .tool-section {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px;
+  }
+
+  .tool-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  /* Layouts */
+  #layout-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .layout-btn {
+    aspect-ratio: 3/4;
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    gap: 3px;
+    transition: border-color 0.15s;
+  }
+
+  .layout-btn:hover { border-color: var(--rose); }
+  .layout-btn.active { border-color: var(--rose-dark); background: var(--rose-light); }
+
+  .layout-btn .lp {
+    background: var(--brown-light);
+    border-radius: 2px;
+    opacity: 0.6;
+  }
+
+  /* Filters */
+  .filter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .filter-btn {
+    font-size: 11px;
+    padding: 5px 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--cream);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .filter-btn:hover { border-color: var(--rose); }
+  .filter-btn.active { background: var(--rose-dark); color: white; border-color: var(--rose-dark); }
+
+  /* Theme */
+  .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+
+  .theme-btn {
+    font-size: 11px;
+    padding: 6px 4px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s;
+    background: var(--cream);
+    color: var(--text);
+  }
+
+  .theme-btn:hover { border-color: var(--rose); }
+  .theme-btn.active { border: 2px solid var(--rose-dark); }
+
+  /* Text tools */
+  .tool-input {
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--cream);
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .tool-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+
+  .tool-row select {
+    flex: 1;
+    font-size: 11px;
+    padding: 5px 4px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--cream);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .tool-row input[type=color] {
+    width: 32px;
+    height: 30px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px;
+    cursor: pointer;
+    background: var(--cream);
+  }
+
+  .apply-btn {
+    width: 100%;
+    padding: 7px;
+    background: var(--rose-dark);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .apply-btn:hover { opacity: 0.85; }
+  .apply-btn.outline {
+    background: var(--white);
+    color: var(--rose-dark);
+    border: 1px solid var(--rose-dark);
+  }
+
+  /* Stickers */
+  .sticker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+
+  .sticker-pick {
+    font-size: 18px;
+    text-align: center;
+    cursor: pointer;
+    padding: 4px 2px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: background 0.1s;
+  }
+
+  .sticker-pick:hover { background: var(--rose-light); }
+
+  /* BG color */
+  .bg-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+
+  .bg-swatch {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.15s;
+  }
+
+  .bg-swatch:hover, .bg-swatch.active { border-color: var(--rose-dark); }
+
+  /* Formats */
+  .format-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+
+  .format-btn {
+    font-size: 11px;
+    padding: 7px 4px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    transition: all 0.15s;
+  }
+
+  .format-btn:hover { border-color: var(--rose); }
+  .format-btn.active { border: 2px solid var(--rose-dark); background: var(--rose-light); }
+
+  /* PAGE NAV */
+  #page-nav {
+    height: 80px;
+    background: var(--white);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+
+  .page-thumb {
+    height: 56px;
+    min-width: 40px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--muted);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .page-thumb.active { border-color: var(--rose-dark); }
+  .page-thumb .del-page {
+    position: absolute;
+    top: 1px; right: 1px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 14px; height: 14px;
+    font-size: 9px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .page-thumb:hover .del-page { display: flex; }
+
+  #add-page-btn {
+    height: 56px;
+    min-width: 40px;
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    background: var(--cream);
+    font-size: 20px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  #add-page-btn:hover { border-color: var(--rose); color: var(--rose-dark); }
+
+  /* PRINT */
+  @media print {
+    #topbar, #gallery-panel, #tools-panel, #page-nav { display: none !important; }
+    body { overflow: visible !important; height: auto !important; }
+    #main { display: block !important; overflow: visible !important; }
+    #canvas-zone { padding: 0 !important; background: white !important; overflow: visible !important; display: block !important; }
+    #page-canvas { box-shadow: none !important; margin: 0 auto !important; }
+  }
+
+  /* Caption edit hint */
+  .frame .edit-hint {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.5);
+    color: white;
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .frame.has-photo:hover .edit-hint { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <span class="logo">💕 Album Souvenir</span>
+  <div class="spacer"></div>
+  <button class="secondary" onclick="printAlbum()">🖨 Imprimer</button>
+  <button onclick="exportPDF()">⬇ Exporter PDF</button>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- GALERIE -->
+  <div id="gallery-panel">
+    <div id="gallery-header">
+      <span>Mes photos</span>
+      <label id="import-btn" title="Importer des photos">
+        + Ajouter
+        <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="importPhotos(event)">
+      </label>
+    </div>
+    <div id="gallery-grid"></div>
+    <div id="gallery-drop" onclick="document.getElementById('file-input').click()">
+      Glisser des photos ici ou cliquer
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div id="canvas-zone">
+    <div id="page-canvas">
+      <!-- dynamically generated -->
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div id="tools-panel">
+
+    <!-- LAYOUT -->
+    <div class="tool-section">
+      <div class="tool-title">Disposition</div>
+      <div id="layout-grid">
+        <div class="layout-btn active" onclick="setLayout('full')" title="Pleine page">
+          <div class="lp" style="width:80%;height:85%;"></div>
+        </div>
+        <div class="layout-btn" onclick="setLayout('duo')" title="Duo">
+          <div style="width:80%;display:flex;gap:3px;height:85%;">
+            <div class="lp" style="flex:1;"></div>
+            <div class="lp" style="flex:1;"></div>
+          </div>
+        </div>
+        <div class="layout-btn" onclick="setLayout('grid4')" title="4 photos">
+          <div style="width:80%;height:85%;display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+            <div class="lp"></div><div class="lp"></div><div class="lp"></div><div class="lp"></div>
+          </div>
+        </div>
+        <div class="layout-btn" onclick="setLayout('grid9')" title="9 photos">
+          <div style="width:80%;height:85%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">
+            <div class="lp"></div><div class="lp"></div><div class="lp"></div>
+            <div class="lp"></div><div class="lp"></div><div class="lp"></div>
+            <div class="lp"></div><div class="lp"></div><div class="lp"></div>
+          </div>
+        </div>
+        <div class="layout-btn" onclick="setLayout('feature')" title="Grande + 3 petites">
+          <div style="width:80%;height:85%;display:flex;flex-direction:column;gap:3px;">
+            <div class="lp" style="flex:2;width:100%;"></div>
+            <div style="flex:1;display:flex;gap:3px;">
+              <div class="lp" style="flex:1;"></div>
+              <div class="lp" style="flex:1;"></div>
+              <div class="lp" style="flex:1;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="layout-btn" onclick="setLayout('trio')" title="Trio vertical">
+          <div style="width:80%;height:85%;display:flex;gap:3px;">
+            <div class="lp" style="flex:1;"></div>
+            <div class="lp" style="flex:1;"></div>
+            <div class="lp" style="flex:1;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTRES -->
+    <div class="tool-section">
+      <div class="tool-title">Filtre photo</div>
+      <div class="filter-grid">
+        <button class="filter-btn active" onclick="setFilter('none')">Normal</button>
+        <button class="filter-btn" onclick="setFilter('grayscale(100%)')">N&B</button>
+        <button class="filter-btn" onclick="setFilter('sepia(80%)')">Sépia</button>
+        <button class="filter-btn" onclick="setFilter('brightness(1.1) saturate(0.7)')">Doux</button>
+        <button class="filter-btn" onclick="setFilter('contrast(1.2) saturate(1.4)')">Vif</button>
+        <button class="filter-btn" onclick="setFilter('sepia(40%) hue-rotate(-10deg) contrast(0.9)')">Rétro</button>
+        <button class="filter-btn" onclick="setFilter('hue-rotate(180deg) saturate(0.7)')">Froid</button>
+        <button class="filter-btn" onclick="setFilter('sepia(20%) saturate(1.4) hue-rotate(10deg)')">Chaud</button>
+      </div>
+    </div>
+
+    <!-- THÈME -->
+    <div class="tool-section">
+      <div class="tool-title">Thème</div>
+      <div class="theme-grid">
+        <button class="theme-btn active" onclick="setTheme('romantique')" style="background:#fdf0f5;border-color:#e8a0b4;">💕 Romantique</button>
+        <button class="theme-btn" onclick="setTheme('vintage')" style="background:#f5f0e8;border-color:#c9a98a;">🎞 Vintage</button>
+        <button class="theme-btn" onclick="setTheme('moderne')" style="background:#f5f5f5;border-color:#ccc;">◻ Moderne</button>
+        <button class="theme-btn" onclick="setTheme('nature')" style="background:#eef5ee;border-color:#8fba8f;">🌿 Nature</button>
+        <button class="theme-btn" onclick="setTheme('fete')" style="background:#fdf5e0;border-color:#f0c050;">🎉 Fête</button>
+        <button class="theme-btn" onclick="setTheme('famille')" style="background:#e8f0f8;border-color:#80a8d0;">🏠 Famille</button>
+      </div>
+    </div>
+
+    <!-- TEXTE -->
+    <div class="tool-section">
+      <div class="tool-title">Titre de page</div>
+      <input class="tool-input" id="title-input" placeholder="Mon titre..." oninput="updateTitle()">
+      <div class="tool-row">
+        <select id="font-select" onchange="updateTitle()" style="font-size:11px;">
+          <option value="Dancing Script">Cursive</option>
+          <option value="Playfair Display">Playfair</option>
+          <option value="Caveat">Caveat</option>
+          <option value="Cinzel">Cinzel</option>
+          <option value="Inter">Simple</option>
+        </select>
+        <select id="title-size" onchange="updateTitle()">
+          <option value="18px">Petit</option>
+          <option value="24px" selected>Moyen</option>
+          <option value="32px">Grand</option>
+          <option value="42px">Très grand</option>
+        </select>
+        <input type="color" id="title-color" value="#c2607a" onchange="updateTitle()">
+      </div>
+      <div class="tool-title" style="margin-top:8px;">Légende (cadre sélectionné)</div>
+      <input class="tool-input" id="caption-input" placeholder="Légende de la photo..." oninput="updateCaption()">
+    </div>
+
+    <!-- STICKERS -->
+    <div class="tool-section">
+      <div class="tool-title">Stickers</div>
+      <div class="sticker-grid">
+        <span class="sticker-pick" onclick="addSticker('❤️')">❤️</span>
+        <span class="sticker-pick" onclick="addSticker('💕')">💕</span>
+        <span class="sticker-pick" onclick="addSticker('🌹')">🌹</span>
+        <span class="sticker-pick" onclick="addSticker('✨')">✨</span>
+        <span class="sticker-pick" onclick="addSticker('💌')">💌</span>
+        <span class="sticker-pick" onclick="addSticker('🌸')">🌸</span>
+        <span class="sticker-pick" onclick="addSticker('🎉')">🎉</span>
+        <span class="sticker-pick" onclick="addSticker('⭐')">⭐</span>
+        <span class="sticker-pick" onclick="addSticker('🦋')">🦋</span>
+        <span class="sticker-pick" onclick="addSticker('🌿')">🌿</span>
+        <span class="sticker-pick" onclick="addSticker('☀️')">☀️</span>
+        <span class="sticker-pick" onclick="addSticker('🎂')">🎂</span>
+        <span class="sticker-pick" onclick="addSticker('📸')">📸</span>
+        <span class="sticker-pick" onclick="addSticker('🌊')">🌊</span>
+        <span class="sticker-pick" onclick="addSticker('🎵')">🎵</span>
+      </div>
+    </div>
+
+    <!-- FOND -->
+    <div class="tool-section">
+      <div class="tool-title">Fond de page</div>
+      <div class="bg-row" id="bg-swatches">
+        <div class="bg-swatch active" style="background:#ffffff;" onclick="setBg('#ffffff')"></div>
+        <div class="bg-swatch" style="background:#fdf0f5;" onclick="setBg('#fdf0f5')"></div>
+        <div class="bg-swatch" style="background:#f5f0e8;" onclick="setBg('#f5f0e8')"></div>
+        <div class="bg-swatch" style="background:#eef5ee;" onclick="setBg('#eef5ee')"></div>
+        <div class="bg-swatch" style="background:#e8f0f8;" onclick="setBg('#e8f0f8')"></div>
+        <div class="bg-swatch" style="background:#fdf5e0;" onclick="setBg('#fdf5e0')"></div>
+        <div class="bg-swatch" style="background:#2d1f1a;" onclick="setBg('#2d1f1a')"></div>
+        <div class="bg-swatch" style="background:#f5f5f5;" onclick="setBg('#f5f5f5')"></div>
+      </div>
+    </div>
+
+    <!-- FORMAT -->
+    <div class="tool-section">
+      <div class="tool-title">Format de page</div>
+      <div class="format-grid">
+        <button class="format-btn active" onclick="setFormat('A4P')">A4 Portrait</button>
+        <button class="format-btn" onclick="setFormat('A4L')">A4 Paysage</button>
+        <button class="format-btn" onclick="setFormat('A5')">A5</button>
+        <button class="format-btn" onclick="setFormat('SQ')">Carré</button>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="tool-section">
+      <button class="apply-btn outline" onclick="clearPage()" style="margin-bottom:6px;">🗑 Vider la page</button>
+      <button class="apply-btn outline" onclick="removeSelectedFrame()">✂ Retirer photo du cadre</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- PAGE NAV -->
+<div id="page-nav">
+  <div id="page-thumbs-container" style="display:flex;gap:8px;align-items:center;"></div>
+  <button id="add-page-btn" onclick="addPage()" title="Nouvelle page">+</button>
+</div>
+
+<script>
+// ─── STATE ───
+const photos = [];
+let pages = [];
+let currentPage = 0;
+let selectedFrame = null;
+let currentFilter = 'none';
+
+const FORMATS = {
+  A4P: { w: 560, h: 792 },
+  A4L: { w: 792, h: 560 },
+  A5:  { w: 396, h: 560 },
+  SQ:  { w: 600, h: 600 },
+};
+
+const LAYOUTS = {
+  full: (w, h, p) => [{x:p, y:p, w:w-2*p, h:h-2*p-(hasTitleEl()?40:0), r:0}],
+  duo: (w, h, p) => {
+    const top = hasTitleEl() ? 40 : 0;
+    const gw = (w-3*p)/2;
+    return [
+      {x:p, y:p+top, w:gw, h:h-2*p-top, r:0},
+      {x:2*p+gw, y:p+top, w:gw, h:h-2*p-top, r:0}
+    ];
+  },
+  grid4: (w, h, p) => {
+    const top = hasTitleEl() ? 40 : 0;
+    const gw = (w-3*p)/2; const gh = (h-3*p-top)/2;
+    return [
+      {x:p, y:p+top, w:gw, h:gh, r:0},
+      {x:2*p+gw, y:p+top, w:gw, h:gh, r:0},
+      {x:p, y:2*p+gh+top, w:gw, h:gh, r:0},
+      {x:2*p+gw, y:2*p+gh+top, w:gw, h:gh, r:0}
+    ];
+  },
+  grid9: (w, h, p) => {
+    const top = hasTitleEl() ? 40 : 0;
+    const gw = (w-4*p)/3; const gh = (h-4*p-top)/3;
+    const arr = [];
+    for(let r=0;r<3;r++) for(let c=0;c<3;c++)
+      arr.push({x:p+c*(gw+p), y:p+top+r*(gh+p), w:gw, h:gh, r:0});
+    return arr;
+  },
+  feature: (w, h, p) => {
+    const top = hasTitleEl() ? 40 : 0;
+    const bh = (h-3*p-top)*0.62; const sh = h-3*p-top-bh;
+    const sw = (w-4*p)/3;
+    return [
+      {x:p, y:p+top, w:w-2*p, h:bh, r:0},
+      {x:p, y:2*p+bh+top, w:sw, h:sh, r:0},
+      {x:2*p+sw, y:2*p+bh+top, w:sw, h:sh, r:0},
+      {x:3*p+2*sw, y:2*p+bh+top, w:sw, h:sh, r:0}
+    ];
+  },
+  trio: (w, h, p) => {
+    const top = hasTitleEl() ? 40 : 0;
+    const gw = (w-4*p)/3;
+    return [
+      {x:p, y:p+top, w:gw, h:h-2*p-top, r:0},
+      {x:2*p+gw, y:p+top, w:gw, h:h-2*p-top, r:0},
+      {x:3*p+2*gw, y:p+top, w:gw, h:h-2*p-top, r:0}
+    ];
+  }
+};
+
+const THEMES = {
+  romantique: { frameColor:'#f5d5e2', bg:'#ffffff', accentColor:'#c2607a', fontColor:'#6b2040' },
+  vintage:    { frameColor:'#e8d8c0', bg:'#fdf8f0', accentColor:'#8b6030', fontColor:'#5a3d20' },
+  moderne:    { frameColor:'#e0e0e0', bg:'#ffffff', accentColor:'#333333', fontColor:'#222222' },
+  nature:     { frameColor:'#c8dfc8', bg:'#f8fbf8', accentColor:'#3a7a3a', fontColor:'#2a5a2a' },
+  fete:       { frameColor:'#f8e090', bg:'#fffdf0', accentColor:'#d0900a', fontColor:'#7a5000' },
+  famille:    { frameColor:'#b8d0e8', bg:'#f0f5fb', accentColor:'#2060a0', fontColor:'#103060' },
+};
+
+function hasTitleEl() {
+  const pg = pages[currentPage];
+  return pg && pg.title && pg.title.trim().length > 0;
+}
+
+// ─── INIT ───
+function createPage(format='A4P') {
+  return { format, layout:'full', theme:'romantique', bg:'#ffffff', title:'', titleFont:'Dancing Script', titleSize:'24px', titleColor:'#c2607a', frames:[], stickers:[], filter:'none' };
+}
+
+function init() {
+  pages.push(createPage());
+  renderPage();
+  renderPageNav();
+}
+
+// ─── IMPORT PHOTOS ───
+function importPhotos(e) {
+  const files = Array.from(e.target.files);
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      photos.push(ev.target.result);
+      loaded++;
+      if(loaded === files.length) renderGallery();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderGallery() {
+  const grid = document.getElementById('gallery-grid');
+  grid.innerHTML = '';
+  photos.forEach((src, i) => {
+    const div = document.createElement('div');
+    div.className = 'thumb';
+    div.draggable = true;
+    div.innerHTML = `<img src="${src}" alt="photo ${i}">
+      <button class="del-thumb" onclick="deletePhoto(${i})">✕</button>`;
+    div.addEventListener('dragstart', ev => ev.dataTransfer.setData('photoIndex', i));
+    div.addEventListener('click', () => placePhotoInSelected(i));
+    grid.appendChild(div);
+  });
+}
+
+function deletePhoto(i) {
+  photos.splice(i, 1);
+  renderGallery();
+}
+
+function placePhotoInSelected(i) {
+  if(selectedFrame === null) return;
+  const pg = pages[currentPage];
+  pg.frames[selectedFrame].photoIndex = i;
+  renderPage();
+}
+
+// ─── RENDER PAGE ───
+function renderPage() {
+  const pg = pages[currentPage];
+  const fmt = FORMATS[pg.format];
+  const canvas = document.getElementById('page-canvas');
+  canvas.style.width = fmt.w + 'px';
+  canvas.style.height = fmt.h + 'px';
+  canvas.style.background = pg.bg;
+  canvas.innerHTML = '';
+
+  const theme = THEMES[pg.theme] || THEMES.romantique;
+  const pad = 16;
+  const frameData = LAYOUTS[pg.layout](fmt.w, fmt.h, pad);
+
+  // Sync frames array length
+  while(pg.frames.length < frameData.length) pg.frames.push({photoIndex:null, caption:''});
+
+  // Title
+  if(pg.title && pg.title.trim()) {
+    const titleEl = document.createElement('div');
+    titleEl.id = 'page-title-el';
+    titleEl.style.cssText = `top:8px; font-family:'${pg.titleFont}',cursive; font-size:${pg.titleSize}; color:${pg.titleColor}; font-weight:700; text-shadow: 0 1px 3px rgba(0,0,0,0.08);`;
+    titleEl.textContent = pg.title;
+    canvas.appendChild(titleEl);
+  }
+
+  // Frames
+  frameData.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'frame' + (pg.frames[i].photoIndex !== null ? ' has-photo' : '');
+    if(i === selectedFrame) div.style.outline = '2px solid #c2607a';
+    div.style.cssText += `left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;`;
+    if(pg.frames[i].photoIndex === null) {
+      div.style.borderColor = theme.frameColor;
+      div.style.background = theme.frameColor + '40';
+      div.innerHTML = `<div class="frame-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+        <span>Déposer une photo</span>
+      </div>`;
+    } else {
+      const img = document.createElement('img');
+      img.src = photos[pg.frames[i].photoIndex];
+      img.style.filter = pg.filter || 'none';
+      div.appendChild(img);
+      div.innerHTML += `<div class="edit-hint">Cliquer pour sélectionner</div>`;
+      if(pg.frames[i].caption) {
+        const cap = document.createElement('div');
+        cap.className = 'caption-el';
+        cap.textContent = pg.frames[i].caption;
+        div.appendChild(cap);
+      }
+    }
+
+    div.addEventListener('dragover', ev => { ev.preventDefault(); div.classList.add('drag-over'); });
+    div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+    div.addEventListener('drop', ev => {
+      ev.preventDefault();
+      div.classList.remove('drag-over');
+      const idx = parseInt(ev.dataTransfer.getData('photoIndex'));
+      pg.frames[i].photoIndex = idx;
+      selectedFrame = i;
+      renderPage();
+    });
+    div.addEventListener('click', () => {
+      selectedFrame = i;
+      document.getElementById('caption-input').value = pg.frames[i].caption || '';
+      renderPage();
+    });
+
+    canvas.appendChild(div);
+  });
+
+  // Stickers
+  pg.stickers.forEach((s, si) => {
+    const el = document.createElement('div');
+    el.className = 'sticker-el';
+    el.textContent = s.emoji;
+    el.style.left = s.x + 'px';
+    el.style.top = s.y + 'px';
+    el.style.fontSize = (s.size || 28) + 'px';
+    makeDraggable(el, si);
+    canvas.appendChild(el);
+  });
+
+  updatePageNav();
+}
+
+// ─── STICKER DRAG ───
+function makeDraggable(el, si) {
+  let ox, oy;
+  el.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    ox = e.clientX - parseInt(el.style.left);
+    oy = e.clientY - parseInt(el.style.top);
+    const onMove = ev => {
+      el.style.left = (ev.clientX - ox) + 'px';
+      el.style.top  = (ev.clientY - oy) + 'px';
+      pages[currentPage].stickers[si].x = ev.clientX - ox;
+      pages[currentPage].stickers[si].y = ev.clientY - oy;
+    };
+    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+  el.addEventListener('dblclick', () => {
+    pages[currentPage].stickers.splice(si, 1);
+    renderPage();
+  });
+}
+
+// ─── TOOLS ───
+function setLayout(l) {
+  pages[currentPage].layout = l;
+  pages[currentPage].frames = [];
+  selectedFrame = null;
+  document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  renderPage();
+}
+
+function setFilter(f) {
+  pages[currentPage].filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('#page-canvas .frame img').forEach(img => img.style.filter = f);
+}
+
+function setTheme(t) {
+  pages[currentPage].theme = t;
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  renderPage();
+}
+
+function updateTitle() {
+  const pg = pages[currentPage];
+  pg.title = document.getElementById('title-input').value;
+  pg.titleFont = document.getElementById('font-select').value;
+  pg.titleSize = document.getElementById('title-size').value;
+  pg.titleColor = document.getElementById('title-color').value;
+  renderPage();
+}
+
+function updateCaption() {
+  if(selectedFrame === null) return;
+  pages[currentPage].frames[selectedFrame].caption = document.getElementById('caption-input').value;
+  renderPage();
+}
+
+function addSticker(emoji) {
+  const fmt = FORMATS[pages[currentPage].format];
+  pages[currentPage].stickers.push({
+    emoji, x: Math.random() * (fmt.w - 60) + 10, y: Math.random() * (fmt.h - 60) + 10, size:32
+  });
+  renderPage();
+}
+
+function setBg(color) {
+  pages[currentPage].bg = color;
+  document.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('page-canvas').style.background = color;
+}
+
+function setFormat(f) {
+  pages[currentPage].format = f;
+  pages[currentPage].frames = [];
+  document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  renderPage();
+}
+
+function clearPage() {
+  if(!confirm('Vider la page ?')) return;
+  pages[currentPage].frames = [];
+  pages[currentPage].stickers = [];
+  pages[currentPage].title = '';
+  document.getElementById('title-input').value = '';
+  selectedFrame = null;
+  renderPage();
+}
+
+function removeSelectedFrame() {
+  if(selectedFrame === null) return;
+  pages[currentPage].frames[selectedFrame].photoIndex = null;
+  pages[currentPage].frames[selectedFrame].caption = '';
+  selectedFrame = null;
+  renderPage();
+}
+
+// ─── PAGE NAV ───
+function addPage() {
+  const fmt = pages[currentPage].format;
+  pages.push(createPage(fmt));
+  currentPage = pages.length - 1;
+  selectedFrame = null;
+  renderPage();
+  renderPageNav();
+}
+
+function goToPage(i) {
+  currentPage = i;
+  selectedFrame = null;
+  const pg = pages[i];
+  document.getElementById('title-input').value = pg.title || '';
+  renderPage();
+  renderPageNav();
+}
+
+function deletePage(i, e) {
+  e.stopPropagation();
+  if(pages.length === 1) return;
+  if(!confirm('Supprimer cette page ?')) return;
+  pages.splice(i, 1);
+  if(currentPage >= pages.length) currentPage = pages.length - 1;
+  renderPage();
+  renderPageNav();
+}
+
+function renderPageNav() {
+  const container = document.getElementById('page-thumbs-container');
+  container.innerHTML = '';
+  pages.forEach((pg, i) => {
+    const div = document.createElement('div');
+    div.className = 'page-thumb' + (i === currentPage ? ' active' : '');
+    div.title = `Page ${i+1}`;
+    div.innerHTML = `<span style="font-size:10px;color:#8a7068">${i+1}</span>
+      <button class="del-page" onclick="deletePage(${i}, event)">✕</button>`;
+    div.addEventListener('click', () => goToPage(i));
+    container.appendChild(div);
+  });
+}
+
+function updatePageNav() {
+  document.querySelectorAll('.page-thumb').forEach((el, i) => {
+    el.classList.toggle('active', i === currentPage);
+  });
+}
+
+// ─── DRAG & DROP (zone canvas depuis galerie) ───
+const galleryDrop = document.getElementById('gallery-drop');
+galleryDrop.addEventListener('dragover', ev => { ev.preventDefault(); galleryDrop.style.borderColor='#c2607a'; });
+galleryDrop.addEventListener('dragleave', () => { galleryDrop.style.borderColor=''; });
+galleryDrop.addEventListener('drop', ev => {
+  ev.preventDefault();
+  galleryDrop.style.borderColor = '';
+  const files = Array.from(ev.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if(!files.length) return;
+  let loaded=0;
+  files.forEach(file => {
+    const r = new FileReader();
+    r.onload = e => { photos.push(e.target.result); loaded++; if(loaded===files.length) renderGallery(); };
+    r.readAsDataURL(file);
+  });
+});
+
+// ─── PRINT ───
+function printAlbum() {
+  window.print();
+}
+
+// ─── EXPORT PDF ───
+async function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const btn = document.querySelector('#topbar button:last-child');
+  btn.textContent = '⏳ Export...';
+  btn.disabled = true;
+
+  const savedPage = currentPage;
+  const canvas = document.getElementById('page-canvas');
+  const pdf = new jsPDF({ unit: 'px', hotfixes: ['px_scaling'] });
+  let firstPage = true;
+
+  for(let i = 0; i < pages.length; i++) {
+    currentPage = i;
+    selectedFrame = null;
+    renderPage();
+    await new Promise(r => setTimeout(r, 200));
+
+    const c = await html2canvas(canvas, { scale: 2, useCORS: true, backgroundColor: pages[i].bg });
+    const imgData = c.toDataURL('image/jpeg', 0.92);
+    const w = c.width/2; const h = c.height/2;
+
+    if(!firstPage) pdf.addPage([w, h], w > h ? 'landscape' : 'portrait');
+    else { pdf.internal.pageSize.width = w; pdf.internal.pageSize.height = h; }
+    pdf.addImage(imgData, 'JPEG', 0, 0, w, h);
+    firstPage = false;
+  }
+
+  pdf.save('album-souvenir.pdf');
+  currentPage = savedPage;
+  renderPage();
+  btn.textContent = '⬇ Exporter PDF';
+  btn.disabled = false;
+}
+
+init();
+</script>
+</body>
+</html>
